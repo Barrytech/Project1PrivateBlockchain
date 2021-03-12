@@ -34,8 +34,8 @@ class Blockchain {
      * Passing as a data `{data: 'Genesis Block'}`
      */
     async initializeChain() {
-        if( this.height === -1){
-            let block = new BlockClass.Block({data: 'Genesis Block'});
+        if (this.height === -1) {
+            let block = new BlockClass.Block({ data: 'Genesis Block' });
             await this._addBlock(block);
         }
     }
@@ -63,8 +63,28 @@ class Blockchain {
      */
     _addBlock(block) {
         let self = this;
-        return new Promise(async (resolve, reject) => {
-           
+        return new Promise(async(resolve, reject) => {
+            let aBlock = block;
+            let height = await self.getChainHeight();
+            aBlock.time = new Date().getTime().toString().slice(0, -3);
+
+            if (height >= 0) {
+                aBlock.height = height + 1;
+                let previousBlock = self.chain(self.height);
+                aBlock.previousBlockHash = previousBlock.Hash;
+
+                //checking signature validity
+                aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
+                self.chain.push(aBlock);
+                self.height = self.chain.length - 1;
+                resolve(aBlock);
+            } else {
+                aBlock.height = height + 1;
+                aBlock.hash = SHA(JSON.stringify(aBlock)).toString();
+                self.chain.push(aBlock);
+                self.height = self.chain.length - 1;
+                resolve(aBlock);
+            }
         });
     }
 
@@ -78,7 +98,8 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            
+            let mesg = `${address}:${new Date().getTime.toString().slice(0,3)}:startRegistry`;
+            resolve(mesg);
         });
     }
 
@@ -101,8 +122,22 @@ class Blockchain {
      */
     submitStar(address, message, signature, star) {
         let self = this;
-        return new Promise(async (resolve, reject) => {
-            
+        return new Promise(async(resolve, reject) => {
+            let time = parseInt(message.split(':')[1]);
+            let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+            if ((time + (5 * 60 * 1000)) >= currentTime) {
+                let validSig = bitcoinMessage.verify(message, address, signature);
+                //check if valid signature function
+                if (validSig) {
+                    let block = new BlockClass.Block({ owner: address, starty: star });
+                    let newBlock = await self._addBlock(block);
+                    resolve(newBlock);
+                } else {
+                    reject("This isn't a validated signature in the system");
+                }
+            } else {
+                reject("Stars are to be submitted 5min early");
+            }
         });
     }
 
@@ -113,22 +148,26 @@ class Blockchain {
      * @param {*} hash 
      */
     getBlockByHash(hash) {
-        let self = this;
-        return new Promise((resolve, reject) => {
-           
-        });
-    }
-
-    /**
-     * This method will return a Promise that will resolve with the Block object 
-     * with the height equal to the parameter `height`
-     * @param {*} height 
-     */
+            let self = this;
+            return new Promise((resolve, reject) => {
+                let block = self.chain.filter(p => p.hash === hash)[0];
+                if (block) {
+                    resolve(block);
+                } else {
+                    resolve(null);
+                }
+            });
+        }
+        /**
+         * This method will return a Promise that will resolve with the Block object 
+         * with the height equal to the parameter `height`
+         * @param {*} height 
+         */
     getBlockByHeight(height) {
         let self = this;
         return new Promise((resolve, reject) => {
             let block = self.chain.filter(p => p.height === height)[0];
-            if(block){
+            if (block) {
                 resolve(block);
             } else {
                 resolve(null);
@@ -142,11 +181,19 @@ class Blockchain {
      * Remember the star should be returned decoded.
      * @param {*} address 
      */
-    getStarsByWalletAddress (address) {
+    getStarsByWalletAddress(address) {
         let self = this;
         let stars = [];
         return new Promise((resolve, reject) => {
-            
+            self.chain.forEach((b) => {
+                let data = b.getBData;
+                if (data) {
+                    if (data.owner == address) {
+                        stars.push(data);
+                    }
+                }
+            });
+            resolve(stars);
         });
     }
 
@@ -159,11 +206,35 @@ class Blockchain {
     validateChain() {
         let self = this;
         let errorLog = [];
-        return new Promise(async (resolve, reject) => {
-            
+        return new Promise(async(resolve, reject) => {
+            let promises = [];
+            let indx = 0;
+            self.chain.forEach(block => {
+                if (block.height > 0) {
+                    let previousBlockHash = block.previousBlockHash;
+                    let blockHash = chian[indx - 1].hash;
+                    if (blockHash != previousBlockHash) {
+                        errorLog.push(`Error - Block Height: ${block.height} - Previous Hash don't match.`);
+                    }
+                }
+                indx++;
+            });
+            Promise.all(promises).then((results) => {
+                indx = 0;
+                results.forEach(valid => {
+                    if (!valid) {
+                        errorLog.push(`Error - Block Height: ${self.chain[indx].height} - Has been tempered with.`);
+                    }
+                    indx++;
+                });
+            }).catch((err) => {
+                console.log(err);
+                reject(err);
+            });
         });
     }
 
+
 }
 
-module.exports.Blockchain = Blockchain;   
+module.exports.Blockchain = Blockchain;

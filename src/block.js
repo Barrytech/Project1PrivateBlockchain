@@ -37,56 +37,67 @@ class Block {
      */
 
     validateChain() {
-            // Save in auxiliary variable the current block hash
+        // Save in auxiliary variable the current block hash
 
-            // Recalculate the hash of the Block
-            // Comparing if the hashes changed
-            // Returning the Block is not valid
+        // Recalculate the hash of the Block
+        // Comparing if the hashes changed
+        // Returning the Block is not valid
 
-            // Returning the Block is valid        let self = this;
-            let errorLog = [];
-            return new Promise(async(resolve, reject) => {
-                    let promises = [];
-                    let indx = 0;
-                    self.chain.forEach(block => {
-                        if (block.height > 0) {
-                            let previousBlockHash = block.previousBlockHash;
-                            let blockHash = chian[indx - 1].hash;
-                            if (blockHash != previousBlockHash) {
-                                errorLog.push(`Error - Block Height: ${block.height} - Previous Hash don't match.`);
-                            }
-                        }
-                        indx++;
-                    });
-                    Promise.all(promises).then((results) => {
-                        indx = 0;
-                        results.forEach(valid => {
-                            if (!valid) {
-                                errorLog.push(`Error - Block Height: ${self.chain[indx].height} - Has been tempered with.`);
-                            }
-                            indx++;
-                        });
-                    });
+        // Returning the Block is valid        
+        let self = this;
+        let errorLog = [];
+        return new Promise(async(resolve, reject) => {
+            let promises = [];
+            let indx = 0;
+            self.chain.forEach(block => {
+                if (block.height > 0) {
+                    let previousBlockHash = block.previousBlockHash;
+                    let blockHash = chain[indx - 1].hash;
+                    if (blockHash != previousBlockHash) {
+                        errorLog.push(`Error - Block Height: ${block.height} - Previous Hash don't match.`);
+                    }
                 }
+                indx++;
+            });
+            Promise.all(promises).then((results) => {
+                indx = 0;
+                results.forEach(valid => {
+                    if (!valid) {
+                        errorLog.push(`Error - Block Height: ${self.chain[indx].height} - Has been tempered with.`);
+                    }
+                    indx++;
+                });
+            }).catch((err) => {
+                console.log(err);
+                reject(err);
+            });
+        });
+    }
 
-                /**
-                 *  Auxiliary Method to return the block body (decoding the data)
-                 *  Steps:
-                 *  
-                 *  1. Use hex2ascii module to decode the data
-                 *  2. Because data is a javascript object use JSON.parse(string) to get the Javascript Object
-                 *  3. Resolve with the data and make sure that you don't need to return the data for the `genesis block` 
-                 *     or Reject with an error.
-                 */
-                getBData() {
-                    // Getting the encoded data saved in the Block
-                    // Decoding the data to retrieve the JSON representation of the object
-                    // Parse the data to an object to be retrieve.
 
-                    // Resolve with the data if the object isn't the Genesis block
+    /**
+     *  Auxiliary Method to return the block body (decoding the data)
+     *  Steps:
+     *  
+     *  1. Use hex2ascii module to decode the data
+     *  2. Because data is a javascript object use JSON.parse(string) to get the Javascript Object
+     *  3. Resolve with the data and make sure that you don't need to return the data for the `genesis block` 
+     *     or Reject with an error.
+     */
+    getBData() {
+        // Getting the encoded data saved in the Block
+        let blockData = this.body;
+        // Decoding the data to retrieve the JSON representation of the object
+        let decodedData = hex2ascii(blockData);
+        // Parse the data to an object to be retrieve.
+        let data = JSON.parse(decodedData);
+        if (data && this.height > 0) {
+            return data;
+        }
+        //Resolve with the data if the object isn't the Genesis block
+    }
 
-                }
+}
 
-            }
-
-            module.exports.Block = Block; // Exposing the Block class as a module
+module.exports.Block = Block;
+// Exposing the Block class as a module
