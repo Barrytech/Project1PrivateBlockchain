@@ -85,7 +85,10 @@ class Blockchain {
                 self.height = self.chain.length - 1;
                 resolve(aBlock);
             }
+        }).catch((error) => {
+            reject(error);
         });
+
     }
 
     /**
