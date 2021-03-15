@@ -80,7 +80,7 @@ class Blockchain {
                 resolve(aBlock);
             } else {
                 aBlock.height = height + 1;
-                aBlock.hash = SHA(JSON.stringify(aBlock)).toString();
+                aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
                 self.chain.push(aBlock);
                 self.height = self.chain.length - 1;
                 resolve(aBlock);
@@ -91,7 +91,7 @@ class Blockchain {
 
     }
 
-    /**
+    /*
      * The requestMessageOwnershipVerification(address) method
      * will allow you  to request a message that you will use to
      * sign it with your Bitcoin Wallet (Electrum or Bitcoin Core)
@@ -157,7 +157,7 @@ class Blockchain {
                 if (block) {
                     resolve(block);
                 } else {
-                    resolve(null);
+                    reject(error);
                 }
             });
         }
@@ -173,7 +173,7 @@ class Blockchain {
             if (block) {
                 resolve(block);
             } else {
-                resolve(null);
+                reject(error);
             }
         });
     }
@@ -194,6 +194,8 @@ class Blockchain {
                     if (data.owner == address) {
                         stars.push(data);
                     }
+                } else {
+                    reject(error);
                 }
             });
             resolve(stars);
@@ -230,6 +232,7 @@ class Blockchain {
                     }
                     indx++;
                 });
+                resolve(errorLog);
             }).catch((err) => {
                 console.log(err);
                 reject(err);
