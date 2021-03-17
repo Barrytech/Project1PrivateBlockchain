@@ -37,45 +37,23 @@ class Block {
      *  Note: to access the class values inside a Promise code you need to create an auxiliary value `let self = this;`
      */
 
-    validateChain() {
-        // Save in auxiliary variable the current block hash
-
-        // Recalculate the hash of the Block
-        // Comparing if the hashes changed
-        // Returning the Block is not valid
-
-        // Returning the Block is valid        
+    validate() {
         let self = this;
-        let errorLog = [];
-        return new Promise(async(resolve, reject) => {
-            let promises = [];
-            let indx = 0;
-            self.chain.forEach(block => {
-                if (block.height > 0) {
-                    let previousBlockHash = block.previousBlockHash;
-                    let blockHash = chain[indx - 1].hash;
-                    if (blockHash != previousBlockHash) {
-                        errorLog.push(`Error - Block Height: ${block.height} - Previous Hash don't match.`);
-                    }
-                }
-                indx++;
-            });
-            Promise.all(promises).then((results) => {
-                indx = 0;
-                results.forEach(valid => {
-                    if (!valid) {
-                        errorLog.push(`Error - Block Height: ${self.chain[indx].height} - Has been tempered with.`);
-                    }
-                    indx++;
-                });
-                resolve(errorLog);
-            }).catch((err) => {
-                console.log(err);
-                reject(err);
-            });
+        return new Promise((resolve) => {
+            // Save in auxiliary variable the current block hash
+            let hashAux = self.hash;
+            // Recalculate the hash of the Block
+            let recalculate = SHA256(JSON.stringify(this).toString);
+            // Comparing if the hashes changed
+            // Returning the Block is not valid
+            if (recalculate != hashAux) {
+                resolve(false);
+            } else {
+                resolve(true);
+            }
+            // Returning the Block is valid 
         });
     }
-
 
     /**
      *  Auxiliary Method to return the block body (decoding the data)
