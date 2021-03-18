@@ -37,8 +37,9 @@ class Block {
      *  Note: to access the class values inside a Promise code you need to create an auxiliary value `let self = this;`
      */
 
-    validate() {
+    async validate() {
         let self = this;
+        self.hash = null;
         return new Promise((resolve) => {
             // Save in auxiliary variable the current block hash
             let hashAux = self.hash;
@@ -46,6 +47,7 @@ class Block {
             let recalculate = SHA256(JSON.stringify(this).toString);
             // Comparing if the hashes changed
             // Returning the Block is not valid
+            self.hash = hashAux;
             if (recalculate != hashAux) {
                 resolve(false);
             } else {
@@ -73,6 +75,8 @@ class Block {
         let data = JSON.parse(decodedData);
         if (data && this.height > 0) {
             return data;
+        } else if (data && this.height == 0) {
+            reject(error);
         }
         //Resolve with the data if the object isn't the Genesis block
     }

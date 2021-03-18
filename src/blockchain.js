@@ -69,14 +69,14 @@ class Blockchain {
             aBlock.time = new Date().getTime().toString().slice(0, -3);
 
             if (height >= 0) {
-                aBlock.height = height + 1;
-                let previousBlock = self.chain(self.height);
-                aBlock.previousBlockHash = previousBlock.Hash;
+                let previousBlock = self.chain.length - 1;
+                aBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
 
                 //checking signature validity
                 aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
                 self.chain.push(aBlock);
                 self.height = self.chain.length - 1;
+                aBlock.height = height + 1;
                 resolve(aBlock);
             } else {
                 aBlock.height = height + 1;
@@ -128,7 +128,7 @@ class Blockchain {
         return new Promise(async(resolve, reject) => {
             let time = parseInt(message.split(':')[1]);
             let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
-            if ((time + (5 * 60 * 1000)) >= currentTime) {
+            if ((time + (5 * 60 * 1000)) > currentTime) {
                 let validSig = bitcoinMessage.verify(message, address, signature);
                 //check if valid signature function
                 if (validSig) {
@@ -160,6 +160,7 @@ class Blockchain {
                     reject(error);
                 }
             });
+
         }
         /**
          * This method will return a Promise that will resolve with the Block object 
