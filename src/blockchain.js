@@ -186,21 +186,69 @@ class Blockchain {
      * @param {*} address 
      */
     getStarsByWalletAddress(address) {
-        let self = this;
-        let stars = [];
-        return new Promise((resolve, reject) => {
-            self.chain.forEach((b) => {
-                let data = b.getBData;
-                if (data) {
-                    if (data.owner == address) {
-                        stars.push(data);
+            let self = this;
+            let stars = [];
+            return new Promise((resolve, reject) => {
+                self.chain.forEach((b) => {
+                    let data = b.getBData;
+                    if (data) {
+                        if (data.owner == address) {
+                            stars.push(data);
+                        }
+                    } else {
+                        reject(error);
                     }
-                } else {
-                    reject(error);
-                }
+                });
+                resolve(stars);
             });
-            resolve(stars);
-        });
+        }
+        //let's write a method to validate each block 
+        // validateBlock(blockHeight) {
+        //     return new Promise((resolve, reject) => {
+        //         this.getBlock(blockHeight).then(response) => {
+        //             const block = response;
+        //             const block = block.hash;
+
+    //             block.hash = '';
+
+
+    //             const validBlockHash = SHA256(JSON.stringify(block)).toString();
+
+    //             if (blockHash === validBlockHash) {
+    //                 resolve(true);
+    //             } else {
+    //                 resolve(false);
+    //             }
+    //         }
+    //     }).catch((error) => {
+    //             reject(error);
+    //         }
+
+
+    //     }
+
+    //  trying a new method Validate a block
+    validateBlock(blockHeight) {
+        let self = this;
+        async function validateBlock() {
+
+            let block = await self.getBlockByHeight(blockHeight);
+
+            let blockHash = block.hash;
+
+            block.hash = '';
+
+            let validBlockHash = SHA256(JSON.stringify(block)).toString();
+            // let's Compare the hashes
+            if (blockHash === validBlockHash) {
+                return true;
+            } else {
+                console.log('Block #' + blockHeight + ' invalid hash:\n' + blockHash + '<>' + validBlockHash);
+                return false;
+            }
+        }
+        // Return a Promise from which the Block validity truth could be thenned.
+        return validateBlock();
     }
 
     /**
