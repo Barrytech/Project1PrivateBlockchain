@@ -63,33 +63,59 @@ class Blockchain {
      */
     _addBlock(block) {
         let self = this;
-        return new Promise(async(resolve, reject) => {
-            let aBlock = block;
-            let height = await self.getChainHeight();
-            aBlock.time = new Date().getTime().toString().slice(0, -3);
+        return new Promise((resolve, reject) => {
+            block.height = self.height + 1;
 
-            if (height >= 0) {
-                let previousBlock = self.chain.length - 1;
-                aBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
+            block.time = new Date().getTime().toString();
+            slice(0, 3);
 
-                //checking signature validity
-                aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
-                self.chain.push(aBlock);
-                self.height = self.chain.length - 1;
-                aBlock.height = height + 1;
-                resolve(aBlock);
+            if (self.height == -1) {
+                block.previousBlockHash = null;
             } else {
-                aBlock.height = height + 1;
-                aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
-                self.chain.push(aBlock);
-                self.height = self.chain.length - 1;
-                resolve(aBlock);
+                block.previousBlockHash = this.hash;
             }
-        }).catch((error) => {
-            reject(error);
-        });
+            block.hash = SHA256(JSON.stringify(block).toString());
 
+            self.chain.push(block);
+
+            this.height += 1;
+
+            resolve(block);
+
+
+        });
     }
+
+    // testing another method above. Might or might attempt to optimize method below
+    // _addBlock(block) {
+    //     let self = this;
+    //     return new Promise(async(resolve, reject) => {
+    //         let aBlock = block;
+    //         let height = await self.getChainHeight();
+    //         aBlock.time = new Date().getTime().toString().slice(0, -3);
+
+    //         if (height >= 0) {
+    //             let previousBlock = self.chain.length - 1;
+    //             aBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
+
+    //             //checking signature validity
+    //             aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
+    //             self.chain.push(aBlock);
+    //             self.height = self.chain.length - 1;
+    //             aBlock.height = height + 1;
+    //             resolve(aBlock);
+    //         } else {
+    //             aBlock.height = height + 1;
+    //             aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
+    //             self.chain.push(aBlock);
+    //             self.height = self.chain.length - 1;
+    //             resolve(aBlock);
+    //         }
+    //     }).catch((error) => {
+    //         reject(error);
+    //     });
+
+    // }
 
     /*
      * The requestMessageOwnershipVerification(address) method
@@ -186,46 +212,23 @@ class Blockchain {
      * @param {*} address 
      */
     getStarsByWalletAddress(address) {
-            let self = this;
-            let stars = [];
-            return new Promise((resolve, reject) => {
-                self.chain.forEach((b) => {
-                    let data = b.getBData;
-                    if (data) {
-                        if (data.owner == address) {
-                            stars.push(data);
-                        }
-                    } else {
-                        reject(error);
+        let self = this;
+        let stars = [];
+        return new Promise((resolve, reject) => {
+            self.chain.forEach((b) => {
+                let data = b.getBData;
+                if (data) {
+                    if (data.owner == address) {
+                        stars.push(data);
                     }
-                });
-                resolve(stars);
+                } else {
+                    reject(error);
+                }
             });
-        }
-        //let's write a method to validate each block 
-        // validateBlock(blockHeight) {
-        //     return new Promise((resolve, reject) => {
-        //         this.getBlock(blockHeight).then(response) => {
-        //             const block = response;
-        //             const block = block.hash;
+            resolve(stars);
+        });
+    }
 
-    //             block.hash = '';
-
-
-    //             const validBlockHash = SHA256(JSON.stringify(block)).toString();
-
-    //             if (blockHash === validBlockHash) {
-    //                 resolve(true);
-    //             } else {
-    //                 resolve(false);
-    //             }
-    //         }
-    //     }).catch((error) => {
-    //             reject(error);
-    //         }
-
-
-    //     }
 
     //  trying a new method Validate a block
     validateBlock(blockHeight) {
@@ -259,35 +262,49 @@ class Blockchain {
      */
     validateChain() {
         let self = this;
-        let errorLog = [];
+        let errorsLog = [];
         return new Promise(async(resolve, reject) => {
-            let promises = [];
-            let indx = 0;
             self.chain.forEach(block => {
-                if (block.height > 0) {
-                    let previousBlockHash = block.previousBlockHash;
-                    let blockHash = chian[indx - 1].hash;
-                    if (blockHash != previousBlockHash) {
-                        errorLog.push(`Error - Block Height: ${block.height} - Previous Hash don't match.`);
-                    }
+                if (!block.validateBlock()) {
+                    errorsLog.push(block);
                 }
-                indx++;
             });
-            Promise.all(promises).then((results) => {
-                indx = 0;
-                results.forEach(valid => {
-                    if (!valid) {
-                        errorLog.push(`Error - Block Height: ${self.chain[indx].height} - Has been tempered with.`);
-                    }
-                    indx++;
-                });
-                resolve(errorLog);
-            }).catch((err) => {
-                console.log(err);
-                reject(err);
-            });
+            resolve(errorsLog);
         });
     }
+
+
+    // validateChain() {
+    //     let self = this;
+    //     let errorLog = [];
+    //     return new Promise(async(resolve, reject) => {
+    //         let promises = [];
+    //         let indx = 0;
+    //         self.chain.forEach(block => {
+    //             if (block.height > 0) {
+    //                 let previousBlockHash = block.previousBlockHash;
+    //                 let blockHash = chian[indx - 1].hash;
+    //                 if (blockHash != previousBlockHash) {
+    //                     errorLog.push(`Error - Block Height: ${block.height} - Previous Hash don't match.`);
+    //                 }
+    //             }
+    //             indx++;
+    //         });
+    //         Promise.all(promises).then((results) => {
+    //             indx = 0;
+    //             results.forEach(valid => {
+    //                 if (!valid) {
+    //                     errorLog.push(`Error - Block Height: ${self.chain[indx].height} - Has been tempered with.`);
+    //                 }
+    //                 indx++;
+    //             });
+    //             resolve(errorLog);
+    //         }).catch((err) => {
+    //             console.log(err);
+    //             reject(err);
+    //         });
+    //     });
+    // }
 
 
 }

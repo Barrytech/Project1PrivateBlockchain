@@ -39,15 +39,13 @@ class Block {
 
     async validate() {
         let self = this;
-        self.hash = null;
         return new Promise((resolve) => {
             // Save in auxiliary variable the current block hash
             let hashAux = self.hash;
             // Recalculate the hash of the Block
-            let recalculate = SHA256(JSON.stringify(this).toString);
+            const recalculate = SHA256(JSON.stringify(this).toString);
             // Comparing if the hashes changed
             // Returning the Block is not valid
-            self.hash = hashAux;
             if (recalculate != hashAux) {
                 resolve(false);
             } else {
@@ -68,17 +66,19 @@ class Block {
      */
     getBData() {
         // Getting the encoded data saved in the Block
+        let self = this;
         let blockData = this.body;
         // Decoding the data to retrieve the JSON representation of the object
         let decodedData = hex2ascii(blockData);
         // Parse the data to an object to be retrieve.
         let data = JSON.parse(decodedData);
+
+        //Resolve with the data if the object isn't the Genesis block
         if (data && this.height > 0) {
             return data;
         } else if (data && this.height == 0) {
             reject(error);
         }
-        //Resolve with the data if the object isn't the Genesis block
     }
 
 }
