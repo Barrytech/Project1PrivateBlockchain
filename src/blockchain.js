@@ -66,8 +66,7 @@ class Blockchain {
         return new Promise((resolve, reject) => {
             block.height = self.height + 1;
 
-            block.time = new Date().getTime().toString();
-            slice(0, 3);
+            block.time = new Date().getTime().toString().slice(0, 3);
 
             if (self.height == -1) {
                 block.previousBlockHash = null;
@@ -80,13 +79,18 @@ class Blockchain {
 
             this.height += 1;
 
+            const validateChainErrs = this.validateChain();
+            if (validateChainErrs > 0) {
+                reject(block);
+            }
+
             resolve(block);
 
 
         });
     }
 
-    // testing another method above. Might or might attempt to optimize method below
+    // // testing another method above. Might or might attempt to optimize method below
     // _addBlock(block) {
     //     let self = this;
     //     return new Promise(async(resolve, reject) => {
@@ -95,7 +99,6 @@ class Blockchain {
     //         aBlock.time = new Date().getTime().toString().slice(0, -3);
 
     //         if (height >= 0) {
-    //             let previousBlock = self.chain.length - 1;
     //             aBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
 
     //             //checking signature validity
@@ -239,7 +242,7 @@ class Blockchain {
 
             let blockHash = block.hash;
 
-            block.hash = '';
+            block.hash = null;
 
             let validBlockHash = SHA256(JSON.stringify(block)).toString();
             // let's Compare the hashes

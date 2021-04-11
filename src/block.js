@@ -42,8 +42,11 @@ class Block {
         return new Promise((resolve) => {
             // Save in auxiliary variable the current block hash
             let hashAux = self.hash;
+
+            self.hash = null;
             // Recalculate the hash of the Block
             const recalculate = SHA256(JSON.stringify(this).toString);
+            self.hash = hashAux;
             // Comparing if the hashes changed
             // Returning the Block is not valid
             if (recalculate != hashAux) {
@@ -77,7 +80,7 @@ class Block {
         if (data && this.height > 0) {
             return data;
         } else if (data && this.height == 0) {
-            reject(error);
+            return false;
         }
     }
 
