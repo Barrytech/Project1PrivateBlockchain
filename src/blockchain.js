@@ -63,31 +63,32 @@ class Blockchain {
      */
 
     _addBlock(block) {
-        let self = this;
-        let errorLogs = [];
-        return new Promise(async(resolve, reject) => {
-            let aBlock = block;
-            let height = await self.getChainHeight();
-            aBlock.time = new Date().getTime().toString().slice(0, -3);
+            let self = this;
+            let errorLogs = [];
+            return new Promise(async(resolve, reject) => {
+                try {
+                    let aBlock = block;
+                    let height = await self.getChainHeight();
+                    aBlock.time = new Date().getTime().toString().slice(0, -3);
 
-            if (height >= 0) {
-                aBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
-                errorLogs = await self.validateChain();
+                    if (height >= 0) {
+                        aBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
+                        errorLogs = await self.validateChain();
 
-            }
-            //checking signature validity
-            aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
-            if (errorLogs.length === 0 && self.chain.push(aBlock)) {
-                self.height++;
-                resolve(aBlock);
-            } else {
-                reject("Cannot add block");
-            }
-        }).catch((error) => {
-            reject(error);
-        });
-
-    }
+                    }
+                    //checking signature validity
+                    aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
+                    if (errorLogs.length === 0 && self.chain.push(aBlock)) {
+                        self.height = self.height + 1;
+                        resolve(aBlock);
+                    } else {
+                        throw new Error("Cannot add block");
+                    }
+                } catch (error) {
+                    reject(error);
+                }
+            }); //closes promise
+        } //closes _addblock method
 
     /*
      * The requestMessageOwnershipVerification(address) method
@@ -223,6 +224,7 @@ class Blockchain {
                     const validBlockHash = SHA256(JSON.stringify(block)).toString();
                     // Compare
                     if (blockHash === validBlockHash) {
+                        block.hash = validBlockHash;
                         resolve(true);
                     } else {
                         console.log(`Block #${blockHeight} invalid hash:\n${blockHash} <> ${validBlockHash}`);
@@ -247,7 +249,7 @@ class Blockchain {
                 if (block.height > 0) {
                     let previousBlockHash = block.previousBlockHash;
                     let blockHash = chain[indx - 1].hash;
-                    if (blockHash != previousBlockHash) {
+                    if (blockHash !== previousBlockHash) {
                         errorLog.push(`Error - Block Height: ${block.height} - Previous Hash don't match.`);
                     }
                 }
