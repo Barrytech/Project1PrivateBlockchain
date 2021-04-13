@@ -61,64 +61,33 @@ class Blockchain {
      * Note: the symbol `_` in the method name indicates in the javascript convention 
      * that this method is a private method. 
      */
+
     _addBlock(block) {
         let self = this;
-        return new Promise((resolve, reject) => {
-            block.height = self.height + 1;
+        let errorLogs = [];
+        return new Promise(async(resolve, reject) => {
+            let aBlock = block;
+            let height = await self.getChainHeight();
+            aBlock.time = new Date().getTime().toString().slice(0, -3);
 
-            block.time = new Date().getTime().toString().slice(0, 3);
+            if (height >= 0) {
+                aBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
+                errorLogs = await self.validateChain();
 
-            if (self.height == -1) {
-                block.previousBlockHash = null;
+            }
+            //checking signature validity
+            aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
+            if (errorLogs.length === 0 && self.chain.push(aBlock)) {
+                self.height++;
+                resolve(aBlock);
             } else {
-                block.previousBlockHash = this.hash;
+                reject("Cannot add block");
             }
-            block.hash = SHA256(JSON.stringify(block).toString());
-
-            self.chain.push(block);
-
-            this.height += 1;
-
-            const validateChainErrs = this.validateChain();
-            if (validateChainErrs > 0) {
-                reject(block);
-            }
-
-            resolve(block);
-
-
+        }).catch((error) => {
+            reject(error);
         });
+
     }
-
-    // // testing another method above. Might or might attempt to optimize method below
-    // _addBlock(block) {
-    //     let self = this;
-    //     return new Promise(async(resolve, reject) => {
-    //         let aBlock = block;
-    //         let height = await self.getChainHeight();
-    //         aBlock.time = new Date().getTime().toString().slice(0, -3);
-
-    //         if (height >= 0) {
-    //             aBlock.previousBlockHash = self.chain[self.chain.length - 1].hash;
-
-    //             //checking signature validity
-    //             aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
-    //             self.chain.push(aBlock);
-    //             self.height = self.chain.length - 1;
-    //             aBlock.height = height + 1;
-    //             resolve(aBlock);
-    //         } else {
-    //             aBlock.height = height + 1;
-    //             aBlock.hash = SHA256(JSON.stringify(aBlock)).toString();
-    //             self.chain.push(aBlock);
-    //             self.height = self.chain.length - 1;
-    //             resolve(aBlock);
-    //         }
-    //     }).catch((error) => {
-    //         reject(error);
-    //     });
-
-    // }
 
     /*
      * The requestMessageOwnershipVerification(address) method
@@ -232,82 +201,73 @@ class Blockchain {
         });
     }
 
-
-    //  trying a new method Validate a block
-    validateBlock(blockHeight) {
-        let self = this;
-        async function validateBlock() {
-
-            let block = await self.getBlockByHeight(blockHeight);
-
-            let blockHash = block.hash;
-
-            block.hash = null;
-
-            let validBlockHash = SHA256(JSON.stringify(block)).toString();
-            // let's Compare the hashes
-            if (blockHash === validBlockHash) {
-                return true;
-            } else {
-                console.log('Block #' + blockHeight + ' invalid hash:\n' + blockHash + '<>' + validBlockHash);
-                return false;
-            }
-        }
-        // Return a Promise from which the Block validity truth could be thenned.
-        return validateBlock();
-    }
-
     /**
      * This method will return a Promise that will resolve with the list of errors when validating the chain.
      * Steps to validate:
      * 1. You should validate each block using `validateBlock`
      * 2. Each Block should check the with the previousBlockHash
      */
-    validateChain() {
-        let self = this;
-        let errorsLog = [];
-        return new Promise(async(resolve, reject) => {
-            self.chain.forEach(block => {
-                if (!block.validateBlock()) {
-                    errorsLog.push(block);
-                }
-            });
-            resolve(errorsLog);
+
+    //  trying a new method Validate a block
+    validateBlock(blockHeight) {
+        return new Promise((resolve, reject) => {
+            // get block object
+            this.getBlock(blockHeight)
+                .then((response) => {
+                    const block = response;
+                    // getting the block hash
+                    const blockHash = block.hash;
+                    // let's set hash to null for now
+                    block.hash = null;
+                    // calculaing a new hash for the  block
+                    const validBlockHash = SHA256(JSON.stringify(block)).toString();
+                    // Compare
+                    if (blockHash === validBlockHash) {
+                        resolve(true);
+                    } else {
+                        console.log(`Block #${blockHeight} invalid hash:\n${blockHash} <> ${validBlockHash}`);
+                        resolve(false);
+                    }
+                })
+                .catch((error) => {
+                    reject(error);
+                });
         });
     }
 
-
-    // validateChain() {
-    //     let self = this;
-    //     let errorLog = [];
-    //     return new Promise(async(resolve, reject) => {
-    //         let promises = [];
-    //         let indx = 0;
-    //         self.chain.forEach(block => {
-    //             if (block.height > 0) {
-    //                 let previousBlockHash = block.previousBlockHash;
-    //                 let blockHash = chian[indx - 1].hash;
-    //                 if (blockHash != previousBlockHash) {
-    //                     errorLog.push(`Error - Block Height: ${block.height} - Previous Hash don't match.`);
-    //                 }
-    //             }
-    //             indx++;
-    //         });
-    //         Promise.all(promises).then((results) => {
-    //             indx = 0;
-    //             results.forEach(valid => {
-    //                 if (!valid) {
-    //                     errorLog.push(`Error - Block Height: ${self.chain[indx].height} - Has been tempered with.`);
-    //                 }
-    //                 indx++;
-    //             });
-    //             resolve(errorLog);
-    //         }).catch((err) => {
-    //             console.log(err);
-    //             reject(err);
-    //         });
-    //     });
-    // }
+    // let's validate the blockchain 
+    validateChain() {
+        let self = this;
+        let errorLog = [];
+        return new Promise(async(resolve, reject) => {
+            let promises = [];
+            let indx = 0;
+            self.chain.forEach(block => {
+                promises.push(block.validate());
+                if (block.height > 0) {
+                    let previousBlockHash = block.previousBlockHash;
+                    let blockHash = chain[indx - 1].hash;
+                    if (blockHash != previousBlockHash) {
+                        errorLog.push(`Error - Block Height: ${block.height} - Previous Hash don't match.`);
+                    }
+                }
+                indx++;
+            });
+            Promise.all(promises).then((results) => {
+                indx = 0;
+                results.forEach(valid => {
+                    if (!valid) {
+                        errorLog.push(`Error - Block Height: ${self.chain[indx].height} - Has been tempered with.`);
+                    }
+                    indx++;
+                });
+                resolve(errorLog);
+            }).catch((err) => {
+                console.log(err);
+                reject(err);
+            });
+        });
+    }
 
 
 }
